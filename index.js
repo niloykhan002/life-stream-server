@@ -21,6 +21,15 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
+    const userCollection = client.db("LifeStreamDB").collection("users");
+
+    // Users api
+    app.post("/users", async (req, res) => {
+      const data = req.body;
+      const result = await userCollection.insertOne(data);
+      res.send(result);
+    });
+
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
     // Send a ping to confirm a successful connection
