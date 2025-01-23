@@ -30,6 +30,17 @@ async function run() {
       res.send(result);
     });
 
+    app.get("/users", async (req, res) => {
+      const { group, district, upazila } = req.query;
+      const query = {
+        blood_group: group,
+        district: district,
+        upazila: upazila,
+      };
+      const result = await userCollection.find(query).toArray();
+      res.send(result);
+    });
+
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
     // Send a ping to confirm a successful connection
