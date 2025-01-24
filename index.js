@@ -32,12 +32,21 @@ async function run() {
 
     app.get("/users", async (req, res) => {
       const { group, district, upazila } = req.query;
+      const role = "donor";
       const query = {
         blood_group: group,
         district: district,
         upazila: upazila,
+        role: role,
       };
       const result = await userCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    app.get("/user", async (req, res) => {
+      const { email } = req.query;
+      const query = { email: email };
+      const result = await userCollection.findOne(query);
       res.send(result);
     });
 
