@@ -1,7 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -33,12 +33,13 @@ async function run() {
     app.get("/users", async (req, res) => {
       const { group, district, upazila } = req.query;
       const role = "donor";
-      const query = {
-        blood_group: group,
-        district: district,
-        upazila: upazila,
-        role: role,
-      };
+      const query = {};
+      if (group && district && upazila) {
+        query.blood_group = group;
+        query.district = district;
+        query.upazila = upazila;
+      }
+
       const result = await userCollection.find(query).toArray();
       res.send(result);
     });
@@ -47,6 +48,25 @@ async function run() {
       const { email } = req.query;
       const query = { email: email };
       const result = await userCollection.findOne(query);
+      res.send(result);
+    });
+
+    app.patch("/users/:id", async (req, res) => {
+      const id = req.params.id;
+      const updateInfo = req.body;
+      const filter = { _id: new ObjectId(id) };
+      const options = { upsert: true };
+      const updateDoc = {
+        $set: {
+          name: updateInfo.name,
+          email: updateInfo.email,
+          image: updateInfo.image,
+          blood_group: updateInfo.blood_group,
+          district: updateInfo.district,
+          upazila: updateInfo.upazila,
+        },
+      };
+      const result = await userCollection.updateOne(filter, updateDoc, options);
       res.send(result);
     });
 
