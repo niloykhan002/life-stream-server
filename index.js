@@ -48,6 +48,18 @@ async function run() {
       });
     };
 
+    // verify admin
+    const verifyAdmin = async (req, res, next) => {
+      const email = req.decoded.email;
+      const query = { email: email };
+      const user = await userCollection.findOne(query);
+      const isAdmin = user?.role === "admin";
+      if (!isAdmin) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      next();
+    };
+
     // Users api
     app.post("/users", async (req, res) => {
       const data = req.body;
@@ -69,14 +81,14 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/user", async (req, res) => {
+    app.get("/user", verifyToken, async (req, res) => {
       const { email } = req.query;
       const query = { email: email };
       const result = await userCollection.findOne(query);
       res.send(result);
     });
 
-    app.patch("/users/:id", async (req, res) => {
+    app.patch("/users/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const updateInfo = req.body;
       const filter = { _id: new ObjectId(id) };
