@@ -23,6 +23,9 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     const userCollection = client.db("LifeStreamDB").collection("users");
+    const donationRequestCollection = client
+      .db("LifeStreamDB")
+      .collection("donationRequests");
 
     // jwt related api
     app.post("/jwt", async (req, res) => {
@@ -67,15 +70,31 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/users", async (req, res) => {
+    app.get("/users/admin/:email", verifyToken, async (req, res) => {
+      const email = req.params.email;
+
+      if (email !== req.decoded.email) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+
+      const query = { email: email };
+      const user = await userCollection.findOne(query);
+      let admin = false;
+      if (user) {
+        admin = user?.role === "admin";
+      }
+      res.send({ admin });
+    });
+
+    app.get("/users/donors", async (req, res) => {
       const { group, district, upazila } = req.query;
       const role = "donor";
-      const query = {};
-      if (group && district && upazila) {
-        query.blood_group = group;
-        query.district = district;
-        query.upazila = upazila;
-      }
+      const query = {
+        blood_group: group,
+        district: district,
+        upazila: upazila,
+        role: role,
+      };
 
       const result = await userCollection.find(query).toArray();
       res.send(result);
@@ -106,6 +125,53 @@ async function run() {
       const result = await userCollection.updateOne(filter, updateDoc, options);
       res.send(result);
     });
+
+    // donation requests api
+
+    app.post("/donations", async (req, res) => {
+      const data = req.body;
+      const result = await donationRequestCollection.insertOne(data);
+      res.send(result);
+    });
+
+    app.get("/donations/limit", verifyToken, async (req, res) => {
+      const { email } = req.query;
+      const query = { requester_email: email };
+      const result = await donationRequestCollection
+        .find(query)
+        .limit(3)
+        .toArray();
+
+      res.send(result);
+    });
+    // app.get("/donations", verifyToken, async (req, res) => {
+    //   const { email, status } = req.query;
+    //   const query = { requester_email: email };
+    //   if (status !== "all") {
+    //     query.donation_status = status;
+    //   }
+    //   const result = await donationRequestCollection.find(query).toArray();
+
+    //   res.send(result);
+    // });
+
+    // app.patch("/donations/:id", async (req, res) => {
+    //   const id = req.params.id;
+    //   const updateInfo = req.body;
+    //   const filter = { _id: new ObjectId(id) };
+    //   const options = { upsert: true };
+    //   const updateDoc = {
+    //     $set: {
+    //       donation_status: updateInfo.donation_status,
+    //     },
+    //   };
+    //   const result = await donationRequestCollection.updateOne(
+    //     filter,
+    //     updateDoc,
+    //     options
+    //   );
+    //   res.send(result);
+    // });
 
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
