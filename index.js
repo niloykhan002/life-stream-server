@@ -144,34 +144,34 @@ async function run() {
 
       res.send(result);
     });
-    // app.get("/donations", verifyToken, async (req, res) => {
-    //   const { email, status } = req.query;
-    //   const query = { requester_email: email };
-    //   if (status !== "all") {
-    //     query.donation_status = status;
-    //   }
-    //   const result = await donationRequestCollection.find(query).toArray();
+    app.get("/donations", verifyToken, async (req, res) => {
+      const { email, status } = req.query;
+      const query = { requester_email: email };
+      if (status !== "all") {
+        query.donation_status = status;
+      }
+      const result = await donationRequestCollection.find(query).toArray();
 
-    //   res.send(result);
-    // });
+      res.send(result);
+    });
 
-    // app.patch("/donations/:id", async (req, res) => {
-    //   const id = req.params.id;
-    //   const updateInfo = req.body;
-    //   const filter = { _id: new ObjectId(id) };
-    //   const options = { upsert: true };
-    //   const updateDoc = {
-    //     $set: {
-    //       donation_status: updateInfo.donation_status,
-    //     },
-    //   };
-    //   const result = await donationRequestCollection.updateOne(
-    //     filter,
-    //     updateDoc,
-    //     options
-    //   );
-    //   res.send(result);
-    // });
+    app.patch("/donations/:id", async (req, res) => {
+      const id = req.params.id;
+      const updateInfo = req.body;
+      const filter = { _id: new ObjectId(id) };
+      const options = { upsert: true };
+      const updateDoc = {
+        $set: {
+          donation_status: updateInfo.donation_status,
+        },
+      };
+      const result = await donationRequestCollection.updateOne(
+        filter,
+        updateDoc,
+        options
+      );
+      res.send(result);
+    });
 
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
