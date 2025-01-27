@@ -90,11 +90,13 @@ async function run() {
       const { group, district, upazila } = req.query;
       const role = "donor";
       const query = {
-        blood_group: group,
-        district: district,
-        upazila: upazila,
         role: role,
       };
+      if ((group, district, upazila)) {
+        query.blood_group = group;
+        query.district = district;
+        query.upazila = upazila;
+      }
 
       const result = await userCollection.find(query).toArray();
       res.send(result);
@@ -154,6 +156,10 @@ async function run() {
 
       res.send(result);
     });
+    app.get("/all-donations", verifyToken, verifyAdmin, async (req, res) => {
+      const result = await donationRequestCollection.find().toArray();
+      res.send(result);
+    });
 
     app.get("/donations/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
@@ -206,7 +212,7 @@ async function run() {
       res.send(result);
     });
 
-    app.delete("/donations/:id", async (req, res) => {
+    app.delete("/donations/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await donationRequestCollection.deleteOne(query);
