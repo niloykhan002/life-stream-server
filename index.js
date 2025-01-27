@@ -69,6 +69,10 @@ async function run() {
       const result = await userCollection.insertOne(data);
       res.send(result);
     });
+    app.get("/users", verifyToken, verifyAdmin, async (req, res) => {
+      const result = await userCollection.find().toArray();
+      res.send(result);
+    });
 
     app.get("/users/admin/:email", verifyToken, async (req, res) => {
       const email = req.params.email;
@@ -113,7 +117,6 @@ async function run() {
       const id = req.params.id;
       const updateInfo = req.body;
       const filter = { _id: new ObjectId(id) };
-      const options = { upsert: true };
       const updateDoc = {
         $set: {
           name: updateInfo.name,
@@ -124,7 +127,25 @@ async function run() {
           upazila: updateInfo.upazila,
         },
       };
-      const result = await userCollection.updateOne(filter, updateDoc, options);
+      const result = await userCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
+
+    app.patch("/all-users/:id", verifyToken, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      const { status, role } = req.body;
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {},
+      };
+      if (status) {
+        updateDoc.$set.status = status;
+      }
+
+      if (role) {
+        updateDoc.$set.role = role;
+      }
+      const result = await userCollection.updateOne(filter, updateDoc);
       res.send(result);
     });
 
