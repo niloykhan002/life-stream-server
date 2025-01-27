@@ -155,13 +155,46 @@ async function run() {
       res.send(result);
     });
 
-    app.patch("/donations/:id", async (req, res) => {
+    app.get("/donations/:id", verifyToken, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await donationRequestCollection.findOne(query);
+      res.send(result);
+    });
+
+    app.patch("/donations/:id", verifyToken, async (req, res) => {
+      const id = req.params.id;
+      const updateInfo = req.body;
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          donation_status: updateInfo.donation_status,
+        },
+      };
+      const result = await donationRequestCollection.updateOne(
+        filter,
+        updateDoc
+      );
+      res.send(result);
+    });
+    app.put("/donations/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const updateInfo = req.body;
       const filter = { _id: new ObjectId(id) };
       const options = { upsert: true };
       const updateDoc = {
         $set: {
+          requester_name: updateInfo.requester_name,
+          requester_email: updateInfo.requester_email,
+          recipient_name: updateInfo.recipient_name,
+          recipient_district: updateInfo.recipient_district,
+          recipient_upazila: updateInfo.recipient_upazila,
+          hospital_name: updateInfo.hospital_name,
+          full_address: updateInfo.full_address,
+          group: updateInfo.group,
+          date: updateInfo.date,
+          time: updateInfo.time,
+          request_message: updateInfo.request_message,
           donation_status: updateInfo.donation_status,
         },
       };
