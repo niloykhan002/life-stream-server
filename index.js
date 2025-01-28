@@ -23,6 +23,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     const userCollection = client.db("LifeStreamDB").collection("users");
+    const blogsCollection = client.db("LifeStreamDB").collection("blogs");
     const donationRequestCollection = client
       .db("LifeStreamDB")
       .collection("donationRequests");
@@ -70,7 +71,12 @@ async function run() {
       res.send(result);
     });
     app.get("/users", verifyToken, verifyAdmin, async (req, res) => {
-      const result = await userCollection.find().toArray();
+      const { status } = req.query;
+      const query = {};
+      if (status !== "all") {
+        query.status = status;
+      }
+      const result = await userCollection.find(query).toArray();
       res.send(result);
     });
 
@@ -178,7 +184,18 @@ async function run() {
       res.send(result);
     });
     app.get("/all-donations", verifyToken, verifyAdmin, async (req, res) => {
-      const result = await donationRequestCollection.find().toArray();
+      const { status } = req.query;
+      const query = {};
+      if (status !== "all") {
+        query.donation_status = status;
+      }
+      const result = await donationRequestCollection.find(query).toArray();
+      res.send(result);
+    });
+    app.get("/all-pending", async (req, res) => {
+      const status = "pending";
+      const query = { donation_status: status };
+      const result = await donationRequestCollection.find(query).toArray();
       res.send(result);
     });
 
@@ -237,6 +254,13 @@ async function run() {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await donationRequestCollection.deleteOne(query);
+      res.send(result);
+    });
+
+    // Blogs api
+    app.post("/blogs", async (req, res) => {
+      const data = req.body;
+      const result = await blogsCollection.insertOne(data);
       res.send(result);
     });
 
