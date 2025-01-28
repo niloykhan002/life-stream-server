@@ -63,6 +63,17 @@ async function run() {
       }
       next();
     };
+    // verify volunteer
+    const verifyVolunteer = async (req, res, next) => {
+      const email = req.decoded.email;
+      const query = { email: email };
+      const user = await userCollection.findOne(query);
+      const isVolunteer = user?.role === "volunteer";
+      if (!isVolunteer) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      next();
+    };
 
     // Users api
     app.post("/users", async (req, res) => {
@@ -94,6 +105,22 @@ async function run() {
         admin = user?.role === "admin";
       }
       res.send({ admin });
+    });
+
+    app.get("/users/volunteer/:email", verifyToken, async (req, res) => {
+      const email = req.params.email;
+
+      if (email !== req.decoded.email) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+
+      const query = { email: email };
+      const user = await userCollection.findOne(query);
+      let volunteer = false;
+      if (user) {
+        volunteer = user?.role === "volunteer";
+      }
+      res.send({ volunteer });
     });
 
     app.get("/users/donors", async (req, res) => {
@@ -192,6 +219,22 @@ async function run() {
       const result = await donationRequestCollection.find(query).toArray();
       res.send(result);
     });
+
+    app.get(
+      "/all-donations/volunteer",
+      verifyToken,
+      verifyVolunteer,
+      async (req, res) => {
+        const { status } = req.query;
+        const query = {};
+        if (status !== "all") {
+          query.donation_status = status;
+        }
+        const result = await donationRequestCollection.find(query).toArray();
+        res.send(result);
+      }
+    );
+
     app.get("/all-pending", async (req, res) => {
       const status = "pending";
       const query = { donation_status: status };
@@ -265,17 +308,49 @@ async function run() {
     });
 
     app.get("/blogs", async (req, res) => {
-      const result = await blogsCollection.find().toArray();
+      const { blog_status } = req.query;
+      const query = {};
+      if (blog_status !== "all") {
+        query.blog_status = blog_status;
+      }
+      const result = await blogsCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    app.get("/blogs/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const result = await blogsCollection.findOne(filter);
+      res.send(result);
+    });
+
+    app.patch("/blogs/:id", verifyToken, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      const updateInfo = req.body;
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          blog_status: updateInfo.blog_status,
+        },
+      };
+      const result = await blogsCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
+
+    app.delete("/blogs/:id", verifyToken, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await blogsCollection.deleteOne(query);
       res.send(result);
     });
 
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log(
-      "Pinged your deployment. You successfully connected to MongoDB!"
-    );
+    // await client.db("admin").command({ ping: 1 });
+    // console.log(
+    //   "Pinged your deployment. You successfully connected to MongoDB!"
+    // );
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
