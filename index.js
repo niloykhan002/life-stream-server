@@ -202,7 +202,7 @@ async function run() {
     });
     app.get("/donations", verifyToken, async (req, res) => {
       const { email, status } = req.query;
-      const query = { requester_email: email };
+      const query = { userEmail: email };
       if (status !== "all") {
         query.donation_status = status;
       }
@@ -232,7 +232,7 @@ async function run() {
         }
         const result = await donationRequestCollection.find(query).toArray();
         res.send(result);
-      }
+      },
     );
 
     app.get("/all-pending", async (req, res) => {
@@ -260,7 +260,7 @@ async function run() {
       };
       const result = await donationRequestCollection.updateOne(
         filter,
-        updateDoc
+        updateDoc,
       );
       res.send(result);
     });
@@ -288,7 +288,7 @@ async function run() {
       const result = await donationRequestCollection.updateOne(
         filter,
         updateDoc,
-        options
+        options,
       );
       res.send(result);
     });
