@@ -152,14 +152,17 @@ async function run() {
       const filter = { _id: new ObjectId(id) };
       const updateDoc = {
         $set: {
-          name: updateInfo.name,
-          email: updateInfo.email,
-          image: updateInfo.image,
+          firstName: updateInfo.firstName,
+          lastName: updateInfo.lastName,
+          contactNumber: updateInfo.contactNumber,
           blood_group: updateInfo.blood_group,
           district: updateInfo.district,
           upazila: updateInfo.upazila,
         },
       };
+      if (updateInfo.image) {
+        updateDoc.$set.image = updateInfo.image;
+      }
       const result = await userCollection.updateOne(filter, updateDoc);
       res.send(result);
     });
