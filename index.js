@@ -229,8 +229,8 @@ async function run() {
     );
 
     app.get("/all-pending", async (req, res) => {
-      const status = "pending";
-      const query = { donation_status: status };
+      const { bloodType, urgency } = req.query;
+      const query = { donation_status: "pending" };
 
       if (bloodType && bloodType !== "All") {
         query.bloodType = bloodType;
