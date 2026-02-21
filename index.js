@@ -229,7 +229,7 @@ async function run() {
     );
 
     app.get("/all-pending", async (req, res) => {
-      const { bloodType, urgency } = req.query;
+      const { bloodType, urgency, page = 1, limit = 8 } = req.query;
       const query = { donation_status: "pending" };
 
       if (bloodType && bloodType !== "All") {
@@ -239,8 +239,23 @@ async function run() {
       if (urgency && urgency !== "All") {
         query.urgency = urgency;
       }
-      const result = await donationRequestCollection.find(query).toArray();
-      res.send(result);
+
+      const pageNum = parseInt(page);
+      const limitNum = parseInt(limit);
+      const skip = (pageNum - 1) * limitNum;
+
+      const total = await donationRequestCollection.countDocuments(query);
+      const result = await donationRequestCollection
+        .find(query)
+        .skip(skip)
+        .limit(limitNum)
+        .toArray();
+      res.send({
+        data: result,
+        total,
+        page: pageNum,
+        totalPages: Math.ceil(total / limitNum),
+      });
     });
 
     app.get("/donations/:id", verifyToken, async (req, res) => {
