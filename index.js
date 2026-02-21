@@ -193,16 +193,6 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/donations/limit", verifyToken, async (req, res) => {
-      const { email } = req.query;
-      const query = { requester_email: email };
-      const result = await donationRequestCollection
-        .find(query)
-        .limit(3)
-        .toArray();
-
-      res.send(result);
-    });
     app.get("/donations", verifyToken, async (req, res) => {
       const { email, status } = req.query;
       const query = { userEmail: email };
@@ -241,6 +231,14 @@ async function run() {
     app.get("/all-pending", async (req, res) => {
       const status = "pending";
       const query = { donation_status: status };
+
+      if (bloodType && bloodType !== "All") {
+        query.bloodType = bloodType;
+      }
+
+      if (urgency && urgency !== "All") {
+        query.urgency = urgency;
+      }
       const result = await donationRequestCollection.find(query).toArray();
       res.send(result);
     });
