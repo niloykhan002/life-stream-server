@@ -215,21 +215,6 @@ async function run() {
       res.send(result);
     });
 
-    app.get(
-      "/all-donations/volunteer",
-      verifyToken,
-      verifyVolunteer,
-      async (req, res) => {
-        const { status } = req.query;
-        const query = {};
-        if (status !== "all") {
-          query.donation_status = status;
-        }
-        const result = await donationRequestCollection.find(query).toArray();
-        res.send(result);
-      },
-    );
-
     app.get("/all-pending", async (req, res) => {
       const { bloodType, urgency, page = 1, limit = 20 } = req.query;
       const query = { donation_status: "pending" };
@@ -357,11 +342,12 @@ async function run() {
           result.map(async (blog) => {
             const author = await userCollection.findOne(
               { email: blog.authorEmail },
-              { projection: { name: 1, role: 1, _id: 0 } },
+              { projection: { firstName: 1, lastName: 1, role: 1, _id: 0 } },
             );
             return {
               ...blog,
-              authorName: author?.name || "Unknown",
+              authorName:
+                `${author?.firstName} ${author?.lastName}` || "Unknown",
               authorRole: author?.role || "volunteer",
             };
           }),
