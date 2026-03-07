@@ -316,6 +316,19 @@ async function run() {
       res.send(result);
     });
 
+    // GET - Featured blog (single published + featured)
+    app.get("/blogs/featured", async (req, res) => {
+      try {
+        const result = await blogCollection.findOne({
+          status: "published",
+          featured: true,
+        });
+        res.send(result);
+      } catch (error) {
+        res.status(500).send({ message: "Failed to fetch featured blog" });
+      }
+    });
+
     // GET - All published blogs
     app.get("/blogs", async (req, res) => {
       try {
