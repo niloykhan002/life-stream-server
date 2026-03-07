@@ -316,7 +316,7 @@ async function run() {
       res.send(result);
     });
 
-    // GET - Featured blog (single published + featured)
+    // GET - Featured blog
     app.get("/blogs/featured", async (req, res) => {
       try {
         const result = await blogCollection.findOne({
@@ -334,7 +334,7 @@ async function run() {
       try {
         const { category, page = 1, limit = 6 } = req.query;
 
-        const query = { status: "published" };
+        const query = { status: "published", featured: false };
         if (category && category !== "All") {
           query.category = category;
         }
