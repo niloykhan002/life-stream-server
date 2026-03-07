@@ -342,12 +342,21 @@ async function run() {
           result.map(async (blog) => {
             const author = await userCollection.findOne(
               { email: blog.authorEmail },
-              { projection: { firstName: 1, lastName: 1, role: 1, _id: 0 } },
+              {
+                projection: {
+                  firstName: 1,
+                  lastName: 1,
+                  image: 1,
+                  role: 1,
+                  _id: 0,
+                },
+              },
             );
             return {
               ...blog,
               authorName:
                 `${author?.firstName} ${author?.lastName}` || "Unknown",
+              authorImage: author?.image,
               authorRole: author?.role || "volunteer",
             };
           }),
