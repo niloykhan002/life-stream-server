@@ -23,7 +23,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     const userCollection = client.db("LifeStreamDB").collection("users");
-    const blogsCollection = client.db("LifeStreamDB").collection("blogs");
+    const blogCollection = client.db("LifeStreamDB").collection("blogs");
     const donationRequestCollection = client
       .db("LifeStreamDB")
       .collection("donationRequests");
@@ -59,17 +59,6 @@ async function run() {
       const user = await userCollection.findOne(query);
       const isAdmin = user?.role === "admin";
       if (!isAdmin) {
-        return res.status(403).send({ message: "forbidden access" });
-      }
-      next();
-    };
-    // verify volunteer
-    const verifyVolunteer = async (req, res, next) => {
-      const email = req.decoded.email;
-      const query = { email: email };
-      const user = await userCollection.findOne(query);
-      const isVolunteer = user?.role === "volunteer";
-      if (!isVolunteer) {
         return res.status(403).send({ message: "forbidden access" });
       }
       next();
@@ -242,7 +231,7 @@ async function run() {
     );
 
     app.get("/all-pending", async (req, res) => {
-      const { bloodType, urgency, page = 1, limit = 8 } = req.query;
+      const { bloodType, urgency, page = 1, limit = 20 } = req.query;
       const query = { donation_status: "pending" };
 
       if (bloodType && bloodType !== "All") {
@@ -342,21 +331,80 @@ async function run() {
       res.send(result);
     });
 
+    // GET - All published blogs
     app.get("/blogs", async (req, res) => {
-      const { blog_status } = req.query;
-      const query = {};
-      if (blog_status !== "all") {
-        query.blog_status = blog_status;
+      try {
+        const { category, page = 1, limit = 6 } = req.query;
+
+        const query = { status: "published" };
+        if (category && category !== "All") {
+          query.category = category;
+        }
+
+        const pageNum = parseInt(page);
+        const limitNum = parseInt(limit);
+        const skip = (pageNum - 1) * limitNum;
+
+        const total = await blogCollection.countDocuments(query);
+        const result = await blogCollection
+          .find(query)
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limitNum)
+          .toArray();
+
+        const blogsWithAuthor = await Promise.all(
+          result.map(async (blog) => {
+            const author = await userCollection.findOne(
+              { email: blog.authorEmail },
+              { projection: { name: 1, role: 1, _id: 0 } },
+            );
+            return {
+              ...blog,
+              authorName: author?.name || "Unknown",
+              authorRole: author?.role || "volunteer",
+            };
+          }),
+        );
+
+        res.send({
+          data: blogsWithAuthor,
+          total,
+          page: pageNum,
+          totalPages: Math.ceil(total / limitNum),
+        });
+      } catch (error) {
+        res.status(500).send({ message: "Failed to fetch blogs" });
       }
-      const result = await blogsCollection.find(query).toArray();
-      res.send(result);
     });
 
+    // GET - Single blog by ID
     app.get("/blogs/:id", async (req, res) => {
-      const id = req.params.id;
-      const filter = { _id: new ObjectId(id) };
-      const result = await blogsCollection.findOne(filter);
-      res.send(result);
+      try {
+        const { id } = req.params;
+        const blog = await blogCollection.findOne({
+          _id: new ObjectId(id),
+          status: "published",
+        });
+
+        if (!blog) {
+          return res.status(404).send({ message: "Blog not found" });
+        }
+
+        // Fetch author info
+        const author = await userCollection.findOne(
+          { email: blog.authorEmail },
+          { projection: { name: 1, role: 1, _id: 0 } },
+        );
+
+        res.send({
+          ...blog,
+          authorName: author?.name || "Unknown",
+          authorRole: author?.role || "volunteer",
+        });
+      } catch (error) {
+        res.status(500).send({ message: "Failed to fetch blog" });
+      }
     });
 
     app.patch("/blogs/:id", verifyToken, verifyAdmin, async (req, res) => {
